@@ -88,12 +88,19 @@ namespace Samples
 
             ///////////////////////
 
+            // Option 1: Set handler using method chaining
             someState.TransitionOn(someEvent).To(someOtherState)
                 .WithHandler(info => Console.WriteLine($"Transition from {info.From} to {info.To} on {info.Event}"));
 
-            // You can also set the Handler property directly
-            var transition = someState.TransitionOn(someEvent).To(someOtherState);
-            transition.Handler = info => Console.WriteLine($"Transition from {info.From} to {info.To} on {info.Event}");
+            // // Option 2: Set handler by assigning to the property
+            // // To demonstrate this, you would usually replace the above line, not add it as a second transition.
+            // var transition = someState.TransitionOn(someEvent).To(someOtherState);
+            // transition.Handler = info => Console.WriteLine($"Transition from {info.From} to {info.To} on {info.Event}");
+
+            // If you want to demonstrate both, you might do it like this (less common for a real state machine, but fine for a sample):
+            // You cannot have two identical transitions from the same state on the same event without guards.
+            // The simplest way to achieve this for a demo is to make them distinct or use guards for one.
+            // Since the goal is just to show handler assignment, you only need one definition.
 
             ///////////////////////
 

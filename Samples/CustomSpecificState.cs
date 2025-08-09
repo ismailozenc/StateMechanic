@@ -9,7 +9,7 @@ namespace Samples
 {
     public class CustomSpecificState : State
     {
-        protected override bool CanTransition(IEvent @event, State to)
+        protected override bool CanTransition(IEvent @event, State to, object eventData)
         {
             // Can abort the transition, like a transition guard
             return true;
@@ -29,7 +29,7 @@ namespace Samples
             base.OnExit(info);
         }
 
-        protected override State HandleEvent(IEvent @event)
+        protected override State HandleEvent(IEvent @event, object eventData)
         {
             // Can force transition to a particular state, like a dynamic transition
 
