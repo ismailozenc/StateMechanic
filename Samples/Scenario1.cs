@@ -114,10 +114,6 @@ namespace Samples
             someState.TransitionOn(someEvent).To(someOtherState)
                 .WithHandler(info => Console.WriteLine($"Transition from {info.From} to {info.To} on {info.Event}"));
 
-            // You can also set the Handler property directly
-            var transition = someState.TransitionOn(someEvent).To(someOtherState);
-            transition.Handler = info => Console.WriteLine($"Transition from {info.From} to {info.To} on {info.Event}");
-
             ///////////////////////
 
             someEvent.Fire();
