@@ -144,7 +144,7 @@ Events
 ------
 
 The other component of a state machine is its events.
-Unlike other state machine libraries, StateMechanic does not use an enum type for its events: this is to that the event data mechanism fits into the picture without ugly hacks.
+Unlike other state machine libraries, StateMechanic does not use an enum type for its events: this is so that the event data mechanism fits into the picture without ugly hacks.
 
 To create an event:
 
