@@ -11,7 +11,7 @@ namespace Samples
     /// <summary>
     /// Examples from the README
     /// </summary>
-    public static class Scenario1
+    public static class Scenario3
     {
         [Description("Quick Start")]
         public static void QuickStart()

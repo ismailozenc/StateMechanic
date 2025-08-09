@@ -75,7 +75,7 @@ namespace Samples
             // Fire events directly. This will throw an exception if there is no transition from the current state.
             missionStarted.Fire();
 
-            Assert.AreEqual(flyingToSearchArea, stateMachine.CurrentState);
+            Assert.AreEqual(flyingToNAI, stateMachine.CurrentState);
         }
 
 
