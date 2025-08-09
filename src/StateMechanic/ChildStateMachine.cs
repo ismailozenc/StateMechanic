@@ -1,22 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
 
 namespace StateMechanic
 {
     /// <summary>
     /// A state machine, which may exist as a child state machine
     /// </summary>
-    public class ChildStateMachine<TState> : IStateMachine, IStateDelegate<TState>
+    public abstract class ChildStateMachine<TState> : IStateMachine, IStateDelegate<TState>
         where TState : StateBase<TState>, new()
     {
-        private readonly List<TState> states = new List<TState>();
-
-        /// <summary>
-        /// Gets the parent state of this state machine, or null if there is none
-        /// </summary>
-        public TState ParentState { get; }
-
         /// <summary>
         /// Gets the initial state of this state machine
         /// </summary>
@@ -31,7 +22,7 @@ namespace StateMechanic
         {
             get
             {
-                this.TopmostStateMachineInternal.EnsureNoFault();
+                this.EnsureNoFault();
                 return this._currentState;
             }
             private set
@@ -41,61 +32,16 @@ namespace StateMechanic
         }
 
         /// <summary>
-        /// If <see cref="CurrentState"/> has a child state machine, gets that child state machine's current state (recursively), otherwise gets <see cref="CurrentState"/>
-        /// </summary>
-        public TState CurrentChildState
-        {
-            get
-            {
-                if (this.CurrentState != null && this.CurrentState.ChildStateMachine != null)
-                    return this.CurrentState.ChildStateMachine.CurrentChildState;
-                else
-                    return this.CurrentState;
-            }
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether the current state machine is active
-        /// </summary>
-        public bool IsActive => this.CurrentState != null;
-
-        /// <summary>
         /// Gets the name given to this state machine when it was created
         /// </summary>
         public string Name { get; }
 
-        /// <summary>
-        /// Gets the parent of this state machine, or null if there is none
-        /// </summary>
-        public IStateMachine ParentStateMachine => this.ParentState?.ParentStateMachine;
-
-        internal virtual StateMachine<TState> TopmostStateMachineInternal => this.ParentState.ParentStateMachine.TopmostStateMachineInternal;
-
-        /// <summary>
-        /// Gets the top-most state machine in this state machine hierarchy (which may be 'this')
-        /// </summary>
-        public IStateMachine TopmostStateMachine => this.TopmostStateMachineInternal;
-
-        IState IStateMachine.ParentState => this.ParentState;
         IState IStateMachine.CurrentState => this.CurrentState;
-        IState IStateMachine.CurrentChildState => this.CurrentChildState;
         IState IStateMachine.InitialState => this.InitialState;
-        IStateMachine IStateMachine.ParentStateMachine => this.ParentStateMachine;
-        IStateMachine IStateMachine.TopmostStateMachine => this.TopmostStateMachineInternal;
 
-        /// <summary>
-        /// Gets a list of all states which are part of this state machine
-        /// </summary>
-        public IReadOnlyList<TState> States { get; }
-
-        IReadOnlyList<IState> IStateMachine.States => this.States;
-
-        internal ChildStateMachine(string name, TState parentState)
+        internal ChildStateMachine(string name)
         {
             this.Name = name;
-            this.ParentState = parentState;
-
-            this.States = new ReadOnlyCollection<TState>(this.states);
         }
 
         /// <summary>
@@ -116,8 +62,7 @@ namespace StateMechanic
         public TNewState CreateState<TNewState>(string name = null) where TNewState : TState, new()
         {
             var state = new TNewState();
-            state.Initialize(name, this);
-            this.states.Add(state);
+            state.Initialize(name, this as StateMachine<TState>);
             return state;
         }
 
@@ -157,41 +102,9 @@ namespace StateMechanic
             this.ResetCurrentState();
         }
 
-        private void ResetCurrentState()
+        internal void ResetCurrentState()
         {
-            if (this.ParentState == null || this.ParentState == this.ParentState.ParentStateMachine.CurrentState)
-                this.CurrentState = this.InitialState;
-            else
-                this.CurrentState = null;
-        }
-
-        /// <summary>
-        /// Determines whether this state machine is a child of another state machine
-        /// </summary>
-        /// <param name="parentStateMachine">State machine which may be a parent of this state machine</param>
-        /// <returns>True if this state machine is a child of the given state machine</returns>
-        public bool IsChildOf(IStateMachine parentStateMachine)
-        {
-            if (parentStateMachine == null)
-                throw new ArgumentNullException(nameof(parentStateMachine));
-
-            if (this.ParentStateMachine != null)
-                return this.ParentStateMachine == parentStateMachine || this.ParentStateMachine.IsChildOf(parentStateMachine);
-
-            return false;
-        }
-
-        internal void ResetChildStateMachine()
-        {
-            // We need to reset our current state before resetting any child state machines, as the
-            // child state machine's current state depends on whether or not we're active
-
-            this.ResetCurrentState();
-
-            foreach (var state in this.states)
-            {
-                state.Reset();
-            }
+            this.CurrentState = this.InitialState;
         }
 
         // This would be protected *and* internal if that were possible
@@ -218,21 +131,11 @@ namespace StateMechanic
 
             bool success;
 
-            // Try and fire it on the child state machine - see if that works
-            // If we got to here, this.CurrentState != null
-            var childStateMachine = this.CurrentState.ChildStateMachine;
-            if (childStateMachine != null && childStateMachine.RequestEventFire(transitionInvoker))
-            {
-                success = true;
-            }
-            else
-            {
-                // No? Invoke it on ourselves
-                success = transitionInvoker.TryInvoke(this.CurrentState);
+            // No? Invoke it on ourselves
+            success = transitionInvoker.TryInvoke(this.CurrentState);
 
-                if (!success)
-                    this.HandleTransitionNotFound(transitionInvoker.Event, (EventFireMethod)transitionInvoker.EventFireMethodInt);
-            }
+            if (!success)
+                this.HandleTransitionNotFound(transitionInvoker.Event, (EventFireMethod)transitionInvoker.EventFireMethodInt);
 
             return success;
         }
@@ -258,9 +161,13 @@ namespace StateMechanic
         [ExcludeFromCoverage]
         public override string ToString()
         {
-            var parentName = (this.ParentStateMachine == null) ? "" : $" Parent={this.ParentStateMachine.Name ?? "(unnamed)"}";
             var stateName = (this.CurrentState == null) ? "None" : (this.CurrentState.Name ?? "(unnamed)");
-            return $"<StateMachine{parentName} Name={this.Name ?? "(unnamed)"} State={stateName}>";
+            return $"<StateMachine Name={this.Name ?? "(unnamed)"} State={stateName}>";
         }
+
+        /// <summary>
+        /// Ensures the state machine is not faulty.
+        /// </summary>
+        public abstract void EnsureNoFault();
     }
 }

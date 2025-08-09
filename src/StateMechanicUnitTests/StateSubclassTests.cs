@@ -304,23 +304,5 @@ namespace StateMechanicUnitTests
             Assert.False(info.IsInnerTransition);
             Assert.AreEqual(EventFireMethod.TryFire, info.EventFireMethod);
         }
-
-        [Test]
-        public void DoesNotThrowIfHandleEventReturnAStateFromADifferentStateMachine()
-        {
-            var sm = new StateMachine();
-            var state1 = sm.CreateInitialState("state1");
-            var state2 = sm.CreateState("state2");
-            var subSm = state1.CreateChildStateMachine("subSm");
-            var state11 = subSm.CreateInitialState<StateSubclassWithMethods>("state11");
-            state11.HandleEventResult = state2;
-            var state12 = subSm.CreateState();
-
-            var evt = new Event("evt");
-            state11.TransitionOn(evt).To(state12);
-
-            Assert.DoesNotThrow(() => evt.Fire());
-            Assert.AreEqual(state2, sm.CurrentState);
-        }
     }
 }

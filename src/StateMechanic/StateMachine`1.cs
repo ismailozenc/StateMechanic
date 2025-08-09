@@ -13,8 +13,6 @@ namespace StateMechanic
         private readonly Queue<ITransitionQueueItem> transitionQueue = new Queue<ITransitionQueueItem>();
         private bool executingTransition;
 
-        internal override StateMachine<TState> TopmostStateMachineInternal => this;
-
         /// <summary>
         /// Gets the fault associated with this state machine. A state machine will fault if one of its handlers throws an exception
         /// </summary>
@@ -29,22 +27,6 @@ namespace StateMechanic
         /// Gets or sets the synchronizer used by this state machine to achieve thread safety. State machines are not thread safe by default
         /// </summary>
         public IStateMachineSynchronizer Synchronizer { get; set; }
-
-        private IStateMachineSerializer<TState> serializer = new StateMachineSerializer<TState>();
-
-        /// <summary>
-        /// Gets or sets the serializer used by this state machine to serialize or deserialize itself, (see <see cref="Serialize()"/> and <see cref="Deserialize(string)"/>).
-        /// </summary>
-        public IStateMachineSerializer<TState> Serializer
-        {
-            get { return this.serializer; }
-            set
-            {
-                if (value == null)
-                    throw new ArgumentNullException();
-                this.serializer = value;
-            }
-        }
 
         /// <summary>
         /// Event raised when a fault occurs in this state machine. A state machine will fault if one of its handlers throws an exception
@@ -76,7 +58,7 @@ namespace StateMechanic
         /// </summary>
         /// <param name="name">Name of this state machine</param>
         public StateMachine(string name = null)
-            : base(name, null)
+            : base(name)
         {
         }
 
@@ -171,9 +153,6 @@ namespace StateMechanic
 
             if (!transitionInfo.IsInnerTransition)
             {
-                if (transitionInfo.From.ChildStateMachine != null)
-                    this.ExitChildStateMachine(transitionInfo.From.ChildStateMachine, transitionInfo.To, transitionInfo.Event, transitionInfo.IsInnerTransition, transitionInfo.EventData, transitionInfo.EventFireMethod);
-
                 this.ExitState(stateHandlerInfo);
             }
 
@@ -194,32 +173,9 @@ namespace StateMechanic
             if (!transitionInfo.IsInnerTransition)
             {
                 this.EnterState(stateHandlerInfo);
-
-                if (transitionInfo.To.ChildStateMachine != null)
-                    this.EnterChildStateMachine(transitionInfo.To.ChildStateMachine, transitionInfo.From, transitionInfo.Event, transitionInfo.IsInnerTransition, transitionInfo.EventData, transitionInfo.EventFireMethod);
             }
 
             this.OnTransitionFinished(transitionInfo.From.ParentStateMachine, transitionInfo);
-        }
-
-        private void ExitChildStateMachine(ChildStateMachine<TState> childStateMachine, TState to, IEvent @event, bool isInnerTransition, object eventData, EventFireMethod eventFireMethod)
-        {
-            if (childStateMachine.CurrentState != null && childStateMachine.CurrentState.ChildStateMachine != null)
-                this.ExitChildStateMachine(childStateMachine.CurrentState.ChildStateMachine, to, @event, isInnerTransition, eventData, eventFireMethod);
-
-            this.ExitState(new StateHandlerInfo<TState>(childStateMachine.CurrentState, to, @event, isInnerTransition, eventData, eventFireMethod));
-
-            childStateMachine.SetCurrentState(null);
-        }
-
-        private void EnterChildStateMachine(ChildStateMachine<TState> childStateMachine, TState from, IEvent @event, bool isInnerTransition, object eventData, EventFireMethod eventFireMethod)
-        {
-            childStateMachine.SetCurrentState(childStateMachine.InitialState);
-
-            this.EnterState(new StateHandlerInfo<TState>(from, childStateMachine.InitialState, @event, isInnerTransition, eventData, eventFireMethod));
-
-            if (childStateMachine.InitialState.ChildStateMachine != null)
-                this.EnterChildStateMachine(childStateMachine.InitialState.ChildStateMachine, from, @event, isInnerTransition, eventData, eventFireMethod);
         }
 
         private void ExitState(StateHandlerInfo<TState> info)
@@ -338,53 +294,6 @@ namespace StateMechanic
 
         #endregion
 
-        #region Serialization
-
-        /// <summary>
-        /// Serialize the current state of this state machine into a string, which can later be used to restore the state of the state machine
-        /// </summary>
-        /// <returns></returns>
-        public string Serialize()
-        {
-            return this.serializer.Serialize(this);
-        }
-
-        /// <summary>
-        /// Restore the state of this state machine from a previously-created string (from calling the <see cref="Serialize()"/> method).
-        /// </summary>
-        /// <param name="serialized">String created by <see cref="Serialize()"/></param>
-        public void Deserialize(string serialized)
-        {
-            this.Reset();
-
-            var childState = this.serializer.Deserialize(this, serialized);
-            var intermediateStates = new List<TState>();
-            for (TState state = childState; state != null; state = state.ParentStateMachine.ParentState)
-            {
-                intermediateStates.Add(state);
-            }
-
-            ChildStateMachine<TState> stateMachine = this;
-
-            foreach (var state in intermediateStates.AsEnumerable().Reverse())
-            {
-                // We should never hit this
-                Trace.Assert(stateMachine != null, $"Unable to deserialize from \"{serialized}\": the previous state has no child state machine. This should not happen");
-
-                // This will throw if the state doesn't belong to the state machine
-                stateMachine.SetCurrentState(state);
-
-                stateMachine = state.ChildStateMachine;
-            }
-
-            // Did we run out of identifiers?
-            // We need to check this to avoid internal inconsistency
-            if (stateMachine != null)
-                throw new StateMachineSerializationException($"Unable to deserialize from \"{serialized}\": a parent state has the child state machine {stateMachine}, but no information is present in the serialized string saying what its state should be. Make sure you're deserializing into exactly the same state machine as created the serialized string.");
-        }
-
-        #endregion
-
         #region Resetting
 
         /// <summary>
@@ -403,14 +312,17 @@ namespace StateMechanic
             this.Fault = null;
             this.transitionQueue.Clear();
 
-            this.ResetChildStateMachine();
+            this.ResetCurrentState();
         }
 
         #endregion
 
         #region Events and helpers
 
-        internal void EnsureNoFault()
+        /// <summary>
+        /// Ensures the state machine is not faulty.
+        /// </summary>
+        public override void EnsureNoFault()
         {
             if (this.Fault != null)
                 throw new StateMachineFaultedException(this.Fault);

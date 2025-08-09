@@ -45,26 +45,16 @@ namespace StateMechanic
         }
 
         /// <summary>
-        /// Gets the indentifier for the state. Used for serializing/deserializing state machines. Can be overridden.
-        /// </summary>
-        public virtual string Identifier => this.Name;
-
-        /// <summary>
         /// Gets a value indicating whether this state's parent state machine is in this state
         /// </summary>
         public bool IsCurrent => this.ParentStateMachine.CurrentState == this;
 
-        /// <summary>
-        /// Gets the child state machine of this state, if any
-        /// </summary>
-        public ChildStateMachine<TState> ChildStateMachine { get; private set; }
-
-        private ChildStateMachine<TState> _parentStateMachine;
+        private StateMachine<TState> _parentStateMachine;
 
         /// <summary>
         /// Gets the state machine to which this state belongs
         /// </summary>
-        public ChildStateMachine<TState> ParentStateMachine
+        public StateMachine<TState> ParentStateMachine
         {
             get
             {
@@ -77,7 +67,6 @@ namespace StateMechanic
             }
         }
 
-        IStateMachine IState.ChildStateMachine => this.ChildStateMachine;
         IStateMachine IState.ParentStateMachine => this.ParentStateMachine;
         IReadOnlyList<ITransition<IState>> IState.Transitions => this.Transitions;
         IReadOnlyList<IStateGroup> IState.Groups => this.Groups;
@@ -106,7 +95,7 @@ namespace StateMechanic
             this.Groups = new ReadOnlyCollection<StateGroup<TState>>(this.groups);
         }
 
-        internal void Initialize(string name, ChildStateMachine<TState> parentStateMachine)
+        internal void Initialize(string name, StateMachine<TState> parentStateMachine)
         {
             this.isInitialized = true;
             // If they've subclassed this and set Name themselves, then provided 'null' in CreateState,
@@ -133,7 +122,7 @@ namespace StateMechanic
             if (@event == null)
                 throw new ArgumentNullException(nameof(@event));
 
-            return new TransitionBuilder<TState>(this.self, @event, this.ParentStateMachine.TopmostStateMachineInternal);
+            return new TransitionBuilder<TState>(this.self, @event, this.ParentStateMachine);
         }
 
         /// <summary>
@@ -147,7 +136,7 @@ namespace StateMechanic
             if (@event == null)
                 throw new ArgumentNullException(nameof(@event));
 
-            return new TransitionBuilder<TState, TEventData>(this.self, @event, this.ParentStateMachine.TopmostStateMachineInternal);
+            return new TransitionBuilder<TState, TEventData>(this.self, @event, this.ParentStateMachine);
         }
 
         /// <summary>
@@ -161,8 +150,8 @@ namespace StateMechanic
             if (@event == null)
                 throw new ArgumentNullException(nameof(@event));
 
-            var transition = new Transition<TState>(this.self, @event, this.ParentStateMachine.TopmostStateMachineInternal);
-            @event.AddTransition(this, transition, this.ParentStateMachine.TopmostStateMachineInternal);
+            var transition = new Transition<TState>(this.self, @event, this.ParentStateMachine);
+            @event.AddTransition(this, transition, this.ParentStateMachine);
             this.transitions.Add(transition);
             return transition;
         }
@@ -178,8 +167,8 @@ namespace StateMechanic
             if (@event == null)
                 throw new ArgumentNullException(nameof(@event));
 
-            var transition = new Transition<TState, TEventData>(this.self, @event, this.ParentStateMachine.TopmostStateMachineInternal);
-            @event.AddTransition(this, transition, this.ParentStateMachine.TopmostStateMachineInternal);
+            var transition = new Transition<TState, TEventData>(this.self, @event, this.ParentStateMachine);
+            @event.AddTransition(this, transition, this.ParentStateMachine);
             this.transitions.Add(transition);
             return transition;
         }
@@ -193,8 +182,8 @@ namespace StateMechanic
             if (@event == null)
                 throw new ArgumentNullException(nameof(@event));
 
-            var transition = new IgnoredTransition<TState>(this.self, @event, this.ParentStateMachine.TopmostStateMachineInternal);
-            @event.AddTransition(this, transition, this.ParentStateMachine.TopmostStateMachineInternal);
+            var transition = new IgnoredTransition<TState>(this.self, @event, this.ParentStateMachine);
+            @event.AddTransition(this, transition, this.ParentStateMachine);
             return this.self;
         }
 
@@ -208,8 +197,8 @@ namespace StateMechanic
             if (@event == null)
                 throw new ArgumentNullException(nameof(@event));
 
-            var transition = new IgnoredTransition<TState, TEventData>(this.self, @event, this.ParentStateMachine.TopmostStateMachineInternal);
-            @event.AddTransition(this, transition, this.ParentStateMachine.TopmostStateMachineInternal);
+            var transition = new IgnoredTransition<TState, TEventData>(this.self, @event, this.ParentStateMachine);
+            @event.AddTransition(this, transition, this.ParentStateMachine);
             return this.self;
         }
 
@@ -268,21 +257,6 @@ namespace StateMechanic
             this.CheckInitialized();
             this.ExitHandler = exitHandler;
             return this.self;
-        }
-
-        /// <summary>
-        /// Create a StateMachine belonging to this state, which will be started when this State is entered
-        /// </summary>
-        /// <param name="name">Optional name (inherits name of child state if not set)</param>
-        /// <returns>The created state machine</returns>
-        public ChildStateMachine<TState> CreateChildStateMachine(string name = null)
-        {
-            this.CheckInitialized();
-            if (this.ChildStateMachine != null)
-                throw new InvalidOperationException("This state already has a child state machine");
-
-            this.ChildStateMachine = new ChildStateMachine<TState>(name ?? this.Name, this.self);
-            return this.ChildStateMachine;
         }
 
         /// <summary>
@@ -358,11 +332,6 @@ namespace StateMechanic
         protected internal virtual bool CanTransition(IEvent @event, TState to, object eventData)
         {
             return true;
-        }
-
-        internal void Reset()
-        {
-            this.ChildStateMachine?.ResetChildStateMachine();
         }
 
         internal void AddTransition(ITransition<TState> transition)

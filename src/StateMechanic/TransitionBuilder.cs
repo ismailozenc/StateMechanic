@@ -22,7 +22,7 @@ namespace StateMechanic
                 throw new ArgumentNullException(nameof(state));
 
             var transition = new Transition<TState>(this.fromState, state, this.@event, this.transitionDelegate);
-            this.@event.AddTransition(this.fromState, transition, this.fromState.ParentStateMachine.TopmostStateMachineInternal);
+            this.@event.AddTransition(this.fromState, transition, this.fromState.ParentStateMachine);
             this.fromState.AddTransition(transition);
             return transition;
         }
@@ -33,7 +33,7 @@ namespace StateMechanic
                 throw new ArgumentNullException(nameof(stateSelector));
 
             var transition = new DynamicTransition<TState>(this.fromState, this.@event, stateSelector, this.transitionDelegate);
-            this.@event.AddTransition(this.fromState, transition, this.fromState.ParentStateMachine.TopmostStateMachineInternal);
+            this.@event.AddTransition(this.fromState, transition, this.fromState.ParentStateMachine);
             this.fromState.AddTransition(transition);
             return transition;
         }
@@ -59,7 +59,7 @@ namespace StateMechanic
                 throw new ArgumentNullException(nameof(state));
 
             var transition = new Transition<TState, TEventData>(this.fromState, state, this.@event, this.transitionDelegate);
-            this.@event.AddTransition(this.fromState, transition, this.fromState.ParentStateMachine.TopmostStateMachineInternal);
+            this.@event.AddTransition(this.fromState, transition, this.fromState.ParentStateMachine);
             this.fromState.AddTransition(transition);
             return transition;
         }
@@ -70,7 +70,7 @@ namespace StateMechanic
                 throw new ArgumentNullException(nameof(stateSelector));
 
             var transition = new DynamicTransition<TState, TEventData>(this.fromState, this.@event, stateSelector, this.transitionDelegate);
-            this.@event.AddTransition(this.fromState, transition, this.fromState.ParentStateMachine.TopmostStateMachineInternal);
+            this.@event.AddTransition(this.fromState, transition, this.fromState.ParentStateMachine);
             this.fromState.AddTransition(transition);
             return transition;
         }

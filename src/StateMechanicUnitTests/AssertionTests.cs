@@ -12,34 +12,6 @@ namespace StateMechanicUnitTests
     public class AssertionTests
     {
         [Test]
-        public void ThrowsIfParentStateUsedInChildStateMachine()
-        {
-            var sm = new StateMachine("State Machine");
-            var state = sm.CreateInitialState("Initial State");
-            var subSm = state.CreateChildStateMachine();
-            var subState = subSm.CreateInitialState("Child Initial State");
-            var evt = new Event("Event");
-            
-            var e = Assert.Throws<InvalidStateTransitionException>(() => subState.TransitionOn(evt).To(state));
-            Assert.AreEqual(subState, e.From);
-            Assert.AreEqual(state, e.To);
-        }
-
-        [Test]
-        public void ThrowsIfChildStateUsedInParentStateMachine()
-        {
-            var sm = new StateMachine("State Machine");
-            var state = sm.CreateInitialState("Initial State");
-            var subSm = state.CreateChildStateMachine();
-            var subState = subSm.CreateInitialState("Child Initial State");
-            var evt = new Event("Event");
-
-            var e = Assert.Throws<InvalidStateTransitionException>(() => state.TransitionOn(evt).To(subState));
-            Assert.AreEqual(state, e.From);
-            Assert.AreEqual(subState, e.To);
-        }
-
-        [Test]
         public void ThrowsIfEventUsedOnTwoDifferentStateMachines()
         {
             var sm1 = new StateMachine("State Machine 1");
@@ -55,18 +27,6 @@ namespace StateMechanicUnitTests
             var e = Assert.Throws<InvalidEventTransitionException>(() => state2.TransitionOn(evt).To(state2));
             Assert.AreEqual(state2, e.From);
             Assert.AreEqual(evt, e.Event);
-        }
-
-        [Test]
-        public void DoesNotThrowIfParentEventUsedInChildStateMachine()
-        {
-            var sm = new StateMachine("State Machine");
-            var state = sm.CreateInitialState("Initial State");
-            var subSm = state.CreateChildStateMachine();
-            var subState = subSm.CreateInitialState("Child Initial State");
-            var evt = new Event("Event");
-
-            Assert.DoesNotThrow(() => subState.TransitionOn(evt).To(subState));
         }
 
         [Test]
@@ -122,15 +82,6 @@ namespace StateMechanicUnitTests
         }
 
         [Test]
-        public void ThrowsIfCreateChildStateMachineCalledOnAStatWhichAlreadyHasAChildStateMachine()
-        {
-            var sm = new StateMachine("sm");
-            var state1 = sm.CreateInitialState("state1");
-            var subSm = state1.CreateChildStateMachine();
-            Assert.Throws<InvalidOperationException>(() => state1.CreateChildStateMachine());
-        }
-
-        [Test]
         public void StateThrowsIfAddToGroupCalledWithNull()
         {
             var sm = new StateMachine("sm");
@@ -158,20 +109,6 @@ namespace StateMechanicUnitTests
         {
             var group = new StateGroup();
             Assert.Throws<ArgumentNullException>(() => group.AddStates(null));
-        }
-
-        [Test]
-        public void IsChildOfThrowsIfArgumentIsNull()
-        {
-            var sm = new StateMachine();
-            Assert.Throws<ArgumentNullException>(() => sm.IsChildOf(null));
-        }
-
-        [Test]
-        public void StateMachineSerializerThrowsIfNullSet()
-        {
-            var sm = new StateMachine();
-            Assert.Throws<ArgumentNullException>(() => sm.Serializer = null);
         }
 
         [Test]

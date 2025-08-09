@@ -18,11 +18,6 @@ namespace StateMechanic
         bool IsCurrent { get; }
 
         /// <summary>
-        /// Gets the child state machine of this state, if any
-        /// </summary>
-        IStateMachine ChildStateMachine { get; }
-
-        /// <summary>
         /// Gets the state machine to which this state belongs
         /// </summary>
         IStateMachine ParentStateMachine { get; }

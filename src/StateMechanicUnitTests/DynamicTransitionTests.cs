@@ -35,21 +35,6 @@ namespace StateMechanicUnitTests
         }
 
         [Test]
-        public void StateSelectorForbidsTransitionToStateFromDifferentStateMachine()
-        {
-            var sm = new StateMachine("sm");
-            var initial = sm.CreateInitialState("initial");
-            var child = initial.CreateChildStateMachine();
-            var childInitial = child.CreateInitialState("childInitial");
-            var evt = new Event("evt");
-            initial.TransitionOn(evt).ToDynamic(i => childInitial);
-
-            var e = Assert.Throws<InvalidStateTransitionException>(() => evt.Fire());
-            Assert.AreEqual(initial, e.From);
-            Assert.AreEqual(childInitial, e.To);
-        }
-
-        [Test]
         public void StateSelectorCausesOuterSelfTransition()
         {
             bool exitCalled = false;

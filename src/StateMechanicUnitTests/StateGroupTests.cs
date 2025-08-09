@@ -52,28 +52,6 @@ namespace StateMechanicUnitTests
         }
 
         [Test]
-        public void IsCurrentIncludesChildStateMachines()
-        {
-            var sm = new StateMachine("State Machine");
-            var state1 = sm.CreateInitialState("State 1");
-            var subSm = state1.CreateChildStateMachine();
-            var state11 = subSm.CreateInitialState("State 1.1");
-            var state12 = subSm.CreateState("State 1.2");
-
-            var group = new StateGroup<State>("Group");
-            state1.AddToGroup(group);
-
-            var evt = new Event("Event");
-            state11.TransitionOn(evt).To(state12);
-
-            Assert.True(group.IsCurrent);
-
-            evt.Fire();
-
-            Assert.True(group.IsCurrent);
-        }
-
-        [Test]
         public void FiresEntryHandlerWithCorrectArgumentsWhenEntered()
         {
             var sm = new StateMachine("State Machine");

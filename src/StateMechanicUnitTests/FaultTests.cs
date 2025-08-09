@@ -160,21 +160,6 @@ namespace StateMechanicUnitTests
         }
 
         [Test]
-        public void FaultingChildStateMachineFaultsParent()
-        {
-            var childStateMachine = this.state1.CreateChildStateMachine();
-
-            var subState1 = childStateMachine.CreateInitialState("State 1.1");
-            var subState2 = childStateMachine.CreateState("State 1.2");
-            subState1.TransitionOn(this.event1).To(subState2);
-
-            subState1.ExitHandler = i => { throw new Exception("foo"); };
-
-            Assert.Throws<TransitionFailedException>(() => this.event1.TryFire());
-            Assert.True(this.stateMachine.IsFaulted);
-        }
-
-        [Test]
         public void ExceptionInExitHandlerFaultsWhenForcedTransition()
         {
             var exception = new Exception("foo");

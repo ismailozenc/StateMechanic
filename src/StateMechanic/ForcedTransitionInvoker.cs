@@ -26,28 +26,13 @@ namespace StateMechanic
 
         public bool TryInvoke(TState sourceState)
         {
-            // We support transitioning between states on different state machines. To do this, we have to find the lowest
-            // common parent - our first transition is on that. Then we have to "walk" down the ancestry of parents of the 'to'
-            // state.
-
-            var states = EnumerateParentStates(this.toState).Reverse();
-            foreach (var state in states)
+            if (this.toState.ParentStateMachine.CurrentState != this.toState)
             {
-                if (state.ParentStateMachine.CurrentState != state)
-                {
-                    var transitionInfo = new ForcedTransitionInfo<TState>(state.ParentStateMachine.CurrentState, state, this.Event, this.EventData, this.EventFireMethod);
-                    this.transitionDelegate.CoordinateTransition(transitionInfo, null);
-                }
+                var transitionInfo = new ForcedTransitionInfo<TState>(this.toState.ParentStateMachine.CurrentState, this.toState, this.Event, this.EventData, this.EventFireMethod);
+                this.transitionDelegate.CoordinateTransition(transitionInfo, null);
             }
+
             return true;
-        }
-
-        private static IEnumerable<TState> EnumerateParentStates(TState startingState)
-        {
-            for (TState state = startingState; state != null; state = state.ParentStateMachine.ParentState)
-            {
-                yield return state;
-            }
         }
     }
 }

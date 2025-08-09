@@ -115,32 +115,16 @@ namespace StateMechanic
             sb.AppendFormat("{0}compound=true;\n", indent);
 
             // States
-            foreach (var state in stateMachine.States)
+            foreach (var state in new[] { stateMachine.CurrentState })
             {
-                // If it has a child state machine, we'll link to/from it differently
-                if (state.ChildStateMachine == null)
-                {
-                    if (state == stateMachine.InitialState)
-                        sb.AppendFormat("{0}\"{1}\" [shape=doubleoctagon width=1 penwidth=2.0];\n", indent, this.NameForState(stateMachine.InitialState));
-                    else if (this.Colorize)
-                        sb.AppendFormat("{0}\"{1}\" [color=\"{2}\"];\n", indent, this.NameForState(state), this.ColorForState(state));
-                }
-                else
-                {
-                    sb.AppendFormat("{0}subgraph \"cluster_{1}\" {{\n", indent, this.NameForState(state));
-                    var name = (state.Name == state.ChildStateMachine.Name) ? this.NameForState(state) : $"{this.NameForState(state)} / {state.ChildStateMachine.Name}";
-                    sb.AppendFormat("{0}   label=\"{1}\";\n", indent, name);
-                    if (state == stateMachine.InitialState)
-                        sb.AppendFormat("{0}    style=bold;\n", indent); // Can't find a way of making it a double border >< 
-                    if (this.Colorize)
-                        sb.AppendFormat("{0}   color=\"{1}\";\n{0}   fontcolor=\"{1}\";\n", indent, this.ColorForState(state));
-                    RenderStateMachine(sb, state.ChildStateMachine, indent + "   ");
-                    sb.AppendFormat("{0}}}\n", indent);
-                }
+                if (state == stateMachine.InitialState)
+                    sb.AppendFormat("{0}\"{1}\" [shape=doubleoctagon width=1 penwidth=2.0];\n", indent, this.NameForState(stateMachine.InitialState));
+                else if (this.Colorize)
+                    sb.AppendFormat("{0}\"{1}\" [color=\"{2}\"];\n", indent, this.NameForState(state), this.ColorForState(state));
             }
 
             // Transitions
-            foreach (var state in stateMachine.States)
+            foreach (var state in new[] { stateMachine.CurrentState })
             {
                 foreach (var transition in state.Transitions)
                 {
@@ -154,7 +138,7 @@ namespace StateMechanic
 
                         sb.AppendFormat("{0}\"{1}\" -> \"VirtualState_{2}\" [label=\"{3}\"];\n",
                             indent,
-                            this.NameForState(transition.From.ChildStateMachine == null ? transition.From : transition.From.ChildStateMachine.InitialState),
+                            this.NameForState(transition.From),
                             this.virtualStateIndex,
                             this.NameForEvent(transition.Event));
 
@@ -166,13 +150,13 @@ namespace StateMechanic
                         // Likewise dest and ltail.
                         sb.AppendFormat("{0}\"{1}\" -> \"{2}\" [label=\"{3}{4}\"{5}{6}{7}];\n",
                             indent,
-                            this.NameForState(transition.From.ChildStateMachine == null ? transition.From : transition.From.ChildStateMachine.InitialState),
-                            this.NameForState(transition.To.ChildStateMachine == null ? transition.To : transition.To.ChildStateMachine.InitialState),
+                            this.NameForState(transition.From),
+                            this.NameForState(transition.To),
                             this.NameForEvent(transition.Event),
                             transition.HasGuard ? "*" : "",
                             this.Colorize && transition.To != stateMachine.InitialState ? String.Format(" color=\"{0}\" fontcolor=\"{0}\"", this.ColorForState(transition.To)) : "",
-                            transition.From.ChildStateMachine == null ? "" : String.Format(" ltail=\"cluster_{0}\"", this.NameForState(transition.From)),
-                            transition.To.ChildStateMachine == null ? "" : String.Format(" lhead=\"cluster_{0}\"", this.NameForState(transition.To)));
+                            "",
+                            "");
                     }
                 }
             }

@@ -63,94 +63,11 @@ namespace StateMechanicUnitTests
         }
 
         [Test]
-        public void TransitionRaisedWhenTransitionOnChild()
-        {
-            var sm = new StateMachine("sm");
-            var initial = sm.CreateInitialState("initial");
-            var child = initial.CreateChildStateMachine();
-            var childInitial = child.CreateInitialState("childInitial");
-            var childState1 = child.CreateState("childState1");
-            var evt = new Event("evt");
-            childInitial.TransitionOn(evt).To(childState1);
-
-            TransitionEventArgs<State> ea = null;
-
-            sm.Transition += (o, e) =>
-            {
-                ea = e;
-            };
-
-            evt.Fire();
-
-            Assert.NotNull(ea);
-            Assert.AreEqual(childInitial, ea.From);
-            Assert.AreEqual(childState1, ea.To);
-            Assert.AreEqual(evt, ea.Event);
-            Assert.AreEqual(child, ea.StateMachine);
-            Assert.False(ea.IsInnerTransition);
-            Assert.AreEqual(EventFireMethod.Fire, ea.EventFireMethod);
-        }
-
-        [Test]
-        public void TransitionRaisedWhenInnerSelfTransitionOnChild()
-        {
-            var sm = new StateMachine("sm");
-            var initial = sm.CreateInitialState("initial");
-            var child = initial.CreateChildStateMachine();
-            var childInitial = child.CreateInitialState("childInitial");
-            var evt = new Event("evt");
-            childInitial.InnerSelfTransitionOn(evt);
-
-            TransitionEventArgs<State> ea = null;
-
-            sm.Transition += (o, e) =>
-            {
-                ea = e;
-            };
-
-            evt.Fire();
-
-            Assert.NotNull(ea);
-            Assert.AreEqual(childInitial, ea.From);
-            Assert.AreEqual(childInitial, ea.To);
-            Assert.AreEqual(evt, ea.Event);
-            Assert.True(ea.IsInnerTransition);
-            Assert.AreEqual(EventFireMethod.Fire, ea.EventFireMethod);
-        }
-
-        [Test]
         public void TransitionNotFoundRaisedWhenTransitionNotFoundOnParent()
         {
             var sm = new StateMachine("sm");
             var initial = sm.CreateInitialState("initial");
             var state1 = sm.CreateState("state 1");
-            var evt = new Event("evt");
-
-            state1.InnerSelfTransitionOn(evt);
-
-            TransitionNotFoundEventArgs<State> ea = null;
-            sm.TransitionNotFound += (o, e) =>
-            {
-                ea = e;
-            };
-
-            evt.TryFire();
-
-            Assert.NotNull(ea);
-            Assert.AreEqual(evt, ea.Event);
-            Assert.AreEqual(initial, ea.From);
-            Assert.AreEqual(sm, ea.StateMachine);
-            Assert.AreEqual(EventFireMethod.TryFire, ea.EventFireMethod);
-        }
-
-        [Test]
-        public void TransitionNotFoundRaisedWhenTransitionNotFoundOnChild()
-        {
-            var sm = new StateMachine("sm");
-            var initial = sm.CreateInitialState("initial");
-            var state1 = sm.CreateState("state 1");
-            var child = initial.CreateChildStateMachine();
-            var childInitial = child.CreateInitialState("childInitial");
             var evt = new Event("evt");
 
             state1.InnerSelfTransitionOn(evt);

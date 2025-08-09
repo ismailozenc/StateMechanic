@@ -129,38 +129,19 @@ namespace StateMechanic
         private void RenderStateMachine(DirectedGraph graph, IStateMachine stateMachine, string parentStateMachineId = null)
         {
             // States
-            foreach (var state in stateMachine.States)
+            foreach (var state in new[] { stateMachine.CurrentState })
             {
                 var stateName = this.NameForState(state);
                 bool isInitialState = state == state.ParentStateMachine.InitialState;
 
-                // If it has a child state machine, we'll link to/from it differently
-                if (state.ChildStateMachine == null)
+                var stateNode = new Node()
                 {
-                    var stateNode = new Node()
-                    {
-                        Id = stateName,
-                        Label = stateName,
-                        Stroke = this.Colorize && !isInitialState ? this.ColorForState(state) : defaultStroke,
-                        StrokeThickness = state == state.ParentStateMachine.InitialState ? "3" : null,
-                    };
-                    graph.Nodes.Add(stateNode);
-                }
-                else
-                {
-                    var stateMachineName = (state.Name == state.ChildStateMachine.Name) ? stateName : $"{stateName} / {state.ChildStateMachine.Name}";
-                    var stateMachineNode = new Node()
-                    {
-                        Id = stateName,
-                        Label = stateMachineName,
-                        Group = "Expanded",
-                        Stroke = this.Colorize && !isInitialState ? this.ColorForState(state) : defaultStroke,
-                        StrokeThickness = isInitialState ? "3" : null,
-                    };
-                    graph.Nodes.Add(stateMachineNode);
-
-                    this.RenderStateMachine(graph, state.ChildStateMachine, stateName);
-                }
+                    Id = stateName,
+                    Label = stateName,
+                    Stroke = this.Colorize && !isInitialState ? this.ColorForState(state) : defaultStroke,
+                    StrokeThickness = state == state.ParentStateMachine.InitialState ? "3" : null,
+                };
+                graph.Nodes.Add(stateNode);
 
                 if (parentStateMachineId != null)
                 {
@@ -194,7 +175,7 @@ namespace StateMechanic
 
                         var link = new Link()
                         {
-                            Source = this.NameForState(transition.From.ChildStateMachine == null ? transition.From : transition.From.ChildStateMachine.InitialState),
+                            Source = this.NameForState(transition.From),
                             Target = nodeName,
                             Label = transitionName,
                             Stroke = defaultStroke,
